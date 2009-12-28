@@ -1381,21 +1381,21 @@ static VALUE comm_scatter(VALUE self, VALUE ary, VALUE rroot)
     rv = MPI_Comm_size(*mc_comm->comm, &csize);
     mpi_exception(rv);
 
-    if (RARRAY(ary)->len != csize) {
-        mpi_exception(MPI_ERR_ARG);
-        return Qnil;
-    }
     
     if (rank == root) {
         int i;
         VALUE dump;
+        if (RARRAY(ary)->len != csize) {
+            mpi_exception(MPI_ERR_ARG);
+            return Qnil;
+        }
 
         datav = ALLOCA_N(struct marshalled, csize);
         
         for (i = 0; i < csize; i++) {
             dump = rb_funcall(mMarshal, id_dump, 1, rb_ary_entry(ary, i));
-            datav[i].str = rb_str2cstr(dump, &datav[i].length);
-
+            datav[i].str = StringValuePtr(dump);
+            datav[i].length = RSTRING(dump)->len;
             if (datav[i].length + 1 > longest)
                 longest = datav[i].length + 1;
         }
@@ -1417,7 +1417,7 @@ static VALUE comm_scatter(VALUE self, VALUE ary, VALUE rroot)
     
     recv = ALLOCA_N(char, longest);
 
-    rv = MPI_Scatter(send, csize * longest, dtype, recv, longest, dtype, 
+    rv = MPI_Scatter(send, 1, dtype, recv, 1, dtype, 
                      root, *mc_comm->comm);
     mpi_exception(rv);
 
@@ -1439,6 +1439,7 @@ static VALUE comm_alltoall(VALUE self, VALUE sary)
     MPI_Datatype dtype;
     VALUE rary; 
     
+    Data_Get_Struct(self, struct mpi_comm, mc_comm);
     rv = MPI_Comm_size(*mc_comm->comm, &csize);
     mpi_exception(rv);
 
@@ -2469,7 +2470,7 @@ void Init_Comm()
     rb_define_method(cComm, "unbuffer", comm_unbuffer, 0);
     
     /* Collective */
-    rb_define_method(cIntraComm, "barrier", comm_barrier, 2);
+    rb_define_method(cIntraComm, "barrier", comm_barrier, 0);
     rb_define_method(cIntraComm, "bcast", comm_bcast, 2);
     rb_define_method(cIntraComm, "gather", comm_gather, 2);
     rb_define_method(cIntraComm, "allgather", comm_allgather, 1);

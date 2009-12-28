@@ -2,6 +2,7 @@ printf("Hello, I am %d of %d\n", MPI::Comm::WORLD.rank(), MPI::Comm::WORLD.size(
 
 hello = "Hello"
 
+MPI::Comm::WORLD.barrier()
 case MPI::Comm::WORLD.rank()
 	when 0 
 		printf("I'm 0 and I'm sending this message: '%s'\n", hello)
@@ -12,3 +13,4 @@ case MPI::Comm::WORLD.rank()
 			   msg)
 end
 
+MPI::Comm::WORLD.barrier()
