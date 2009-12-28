@@ -1200,16 +1200,19 @@ static VALUE comm_bcast(VALUE self, VALUE obj, VALUE rroot)
         VALUE dump;
 
         dump = rb_funcall(mMarshal, id_dump, 1, obj);
-        data = rb_str2cstr(dump, &length);
+//        data = rb_str2cstr(dump, &length);
+        data = StringValuePtr(dump);
+        length = RSTRING(dump)->len;
     }
 
     rv = MPI_Bcast(&length, 1, MPI_INT, root, *mc_comm->comm);
     mpi_exception(rv);
 
-    if (rank != root)
-        data = ALLOCA_N(char, length + 1);
+    if (rank != root) {
+        data = rb_str_new(0, length);
+    }
 
-    rv = MPI_Bcast(data, length + 1, MPI_BYTE, root, *mc_comm->comm);
+    rv = MPI_Bcast(data, length, MPI_BYTE, root, *mc_comm->comm);
     mpi_exception(rv);
 
     if (rank == root) {
