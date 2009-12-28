@@ -1200,7 +1200,6 @@ static VALUE comm_bcast(VALUE self, VALUE obj, VALUE rroot)
         VALUE dump;
 
         dump = rb_funcall(mMarshal, id_dump, 1, obj);
-//        data = rb_str2cstr(dump, &length);
         data = StringValuePtr(dump);
         length = RSTRING(dump)->len;
     }
@@ -1209,10 +1208,10 @@ static VALUE comm_bcast(VALUE self, VALUE obj, VALUE rroot)
     mpi_exception(rv);
 
     if (rank != root) {
-        data = rb_str_new(0, length);
+        data = ALLOC_N(char , length+1);
     }
 
-    rv = MPI_Bcast(data, length, MPI_BYTE, root, *mc_comm->comm);
+    rv = MPI_Bcast(data, length+1, MPI_BYTE, root, *mc_comm->comm);
     mpi_exception(rv);
 
     if (rank == root) {
@@ -1220,7 +1219,7 @@ static VALUE comm_bcast(VALUE self, VALUE obj, VALUE rroot)
     } else {
         VALUE load;
 
-        obj = rb_str_new(data, length);
+        obj = rb_str_new(data, length+1);
         load = rb_funcall(mMarshal, id_load, 1, obj);
 
         return load;
